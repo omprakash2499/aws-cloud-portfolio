@@ -10,7 +10,6 @@ I deployed a VPC with a public test instance and a private Nginx server using Cl
 
 **Used:** VPC, EC2, NAT Gateway, IAM, Systems Manager, CloudFormation, Bash and Nginx.
 
-**Status:** Deployed, tested and cleaned up on 17 September 2026.
 
 [View the project and screenshots](01-secure-vpc-ec2/README.md)
 
