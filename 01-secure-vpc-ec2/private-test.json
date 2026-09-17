@@ -1,0 +1,12 @@
+{
+  "commands": [
+    "set -eu",
+    "for i in $(seq 1 60); do if systemctl is-active --quiet nginx; then break; fi; sleep 5; done",
+    "systemctl is-active nginx",
+    "curl --fail --connect-timeout 10 http://localhost",
+    "curl --fail --head --connect-timeout 10 --max-time 30 https://example.com"
+  ],
+  "executionTimeout": [
+    "420"
+  ]
+}

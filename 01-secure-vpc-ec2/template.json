@@ -1,0 +1,413 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Om portfolio: isolated single-AZ VPC lab, EC2, NAT and SSM. Billable resources.",
+  "Parameters": {
+    "LatestAmi": {
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+      "Default": "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+    }
+  },
+  "Resources": {
+    "VPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.20.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "portfolio-vpc"
+          }
+        ]
+      }
+    },
+    "PublicSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "CidrBlock": "10.20.1.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "portfolio-PublicSubnet"
+          }
+        ]
+      }
+    },
+    "PrivateSubnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "CidrBlock": "10.20.2.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            0,
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "portfolio-PrivateSubnet"
+          }
+        ]
+      }
+    },
+    "Gateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {}
+    },
+    "GatewayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "InternetGatewayId": {
+          "Ref": "Gateway"
+        }
+      }
+    },
+    "PublicRoutes": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "portfolio-PublicRoutes"
+          }
+        ]
+      }
+    },
+    "PublicAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnet"
+        },
+        "RouteTableId": {
+          "Ref": "PublicRoutes"
+        }
+      }
+    },
+    "PrivateRoutes": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "portfolio-PrivateRoutes"
+          }
+        ]
+      }
+    },
+    "PrivateAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PrivateSubnet"
+        },
+        "RouteTableId": {
+          "Ref": "PrivateRoutes"
+        }
+      }
+    },
+    "PublicDefaultRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PublicRoutes"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "Gateway"
+        }
+      },
+      "DependsOn": "GatewayAttachment"
+    },
+    "NatAddress": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      },
+      "DependsOn": "GatewayAttachment"
+    },
+    "NatGateway": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "PublicSubnet"
+        },
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "NatAddress",
+            "AllocationId"
+          ]
+        },
+        "ConnectivityType": "public"
+      },
+      "DependsOn": [
+        "PublicDefaultRoute",
+        "PublicAssociation"
+      ]
+    },
+    "PrivateDefaultRoute": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "PrivateRoutes"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": {
+          "Ref": "NatGateway"
+        }
+      }
+    },
+    "PublicSG": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "GroupDescription": "Portfolio lab PublicSG",
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "PrivateSG": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPC"
+        },
+        "GroupDescription": "Portfolio lab PrivateSG",
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "SourceSecurityGroupId": {
+              "Ref": "PublicSG"
+            }
+          }
+        ]
+      }
+    },
+    "InstanceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Sub": "arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
+          }
+        ]
+      }
+    },
+    "InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [
+          {
+            "Ref": "InstanceRole"
+          }
+        ]
+      }
+    },
+    "PublicInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Ref": "LatestAmi"
+        },
+        "InstanceType": "t3.micro",
+        "CreditSpecification": {
+          "CPUCredits": "standard"
+        },
+        "IamInstanceProfile": {
+          "Ref": "InstanceProfile"
+        },
+        "MetadataOptions": {
+          "HttpTokens": "required",
+          "HttpEndpoint": "enabled"
+        },
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": 8,
+              "VolumeType": "gp3",
+              "Encrypted": true,
+              "DeleteOnTermination": true
+            }
+          }
+        ],
+        "NetworkInterfaces": [
+          {
+            "DeviceIndex": "0",
+            "AssociatePublicIpAddress": true,
+            "SubnetId": {
+              "Ref": "PublicSubnet"
+            },
+            "GroupSet": [
+              {
+                "Ref": "PublicSG"
+              }
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "portfolio-public-ec2"
+          }
+        ]
+      },
+      "DependsOn": [
+        "PublicDefaultRoute",
+        "PublicAssociation"
+      ]
+    },
+    "PrivateInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Ref": "LatestAmi"
+        },
+        "InstanceType": "t3.micro",
+        "CreditSpecification": {
+          "CPUCredits": "standard"
+        },
+        "IamInstanceProfile": {
+          "Ref": "InstanceProfile"
+        },
+        "MetadataOptions": {
+          "HttpTokens": "required",
+          "HttpEndpoint": "enabled"
+        },
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": 8,
+              "VolumeType": "gp3",
+              "Encrypted": true,
+              "DeleteOnTermination": true
+            }
+          }
+        ],
+        "NetworkInterfaces": [
+          {
+            "DeviceIndex": "0",
+            "AssociatePublicIpAddress": false,
+            "SubnetId": {
+              "Ref": "PrivateSubnet"
+            },
+            "GroupSet": [
+              {
+                "Ref": "PrivateSG"
+              }
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "portfolio-private-ec2"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": "#!/bin/bash\nset -eu\ndnf install -y nginx\ncat > /usr/share/nginx/html/index.html <<'HTML'\n<!doctype html><html><head><title>Om | AWS networking lab</title></head><body><h1>AWS Cloud Portfolio</h1><p>Private EC2 web server \u2014 Om Prakash Kasaraneni</p><p>This page is served by Nginx in a private subnet.</p></body></html>\nHTML\nsystemctl enable --now nginx\n"
+        }
+      },
+      "DependsOn": [
+        "PrivateDefaultRoute",
+        "PrivateAssociation"
+      ]
+    }
+  },
+  "Outputs": {
+    "VpcId": {
+      "Value": {
+        "Ref": "VPC"
+      }
+    },
+    "PublicInstanceId": {
+      "Value": {
+        "Ref": "PublicInstance"
+      }
+    },
+    "PrivateInstanceId": {
+      "Value": {
+        "Ref": "PrivateInstance"
+      }
+    },
+    "PrivateIp": {
+      "Value": {
+        "Fn::GetAtt": [
+          "PrivateInstance",
+          "PrivateIp"
+        ]
+      }
+    },
+    "PrivateSecurityGroup": {
+      "Value": {
+        "Ref": "PrivateSG"
+      }
+    },
+    "PublicSecurityGroup": {
+      "Value": {
+        "Ref": "PublicSG"
+      }
+    },
+    "NatGatewayId": {
+      "Value": {
+        "Ref": "NatGateway"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# Local credentials
+*.pem
+*.key
+.env
+.env.*
+.aws/
+
+# Local Terraform files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# Operating system files
+.DS_Store
+Thumbs.db
