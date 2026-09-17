@@ -119,9 +119,3 @@ The lab is no longer hosted. EC2, EBS, public IPv4 and NAT can incur charges on 
 ## Scope and next improvements
 
 This is a single-AZ networking lab. It does not demonstrate high availability, a public website, or firewall-denial testing. Next improvements would be a scoped deployment identity, a controlled blocked-traffic test, and tighter outbound rules based on the traffic the application actually needs.
-
-## Reference
-
-The starting point was [Day 7 of Abhishek Veeramalla's AWS DevOps Zero to Hero](https://github.com/iam-veeramalla/aws-devops-zero-to-hero#day-7-secure-vpc-setup-with-ec2-instances). For this version, I used CloudFormation and Bash to automate deployment, Amazon Linux 2023, and Systems Manager instead of SSH keys. The automation was prepared with AI assistance; the deployment, test output and screenshots are from my AWS lab.
-
-Screenshot privacy: names, the local username, the AWS account ID, and public IP/DNS details have been covered with opaque masks where visible. Other pixels and test results are unchanged. Resource IDs and private network addresses remain visible to explain the lab.

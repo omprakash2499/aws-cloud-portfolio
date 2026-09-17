@@ -12,7 +12,3 @@ I deployed a VPC with a public test instance and a private Nginx server using Cl
 
 
 [View the project and screenshots](01-secure-vpc-ec2/README.md)
-
-## Learning reference
-
-I'm following selected projects from [Abhishek Veeramalla's AWS DevOps Zero to Hero](https://github.com/iam-veeramalla/aws-devops-zero-to-hero). Each project explains the setup I used and what I tested.
