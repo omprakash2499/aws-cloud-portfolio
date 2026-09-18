@@ -1,0 +1,48 @@
+name: Portfolio CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-tests:
+    name: Lambda unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Test request handling with mocked DynamoDB
+        run: python -m unittest discover -s 03-terraform-serverless-api/tests -v
+
+  terraform:
+    name: Terraform checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: 03-terraform-serverless-api
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: '1.14.8'
+          terraform_wrapper: false
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+      - name: Initialize providers without a backend
+        run: terraform init -backend=false -input=false -lockfile=readonly
+      - name: Validate configuration
+        run: terraform validate -no-color

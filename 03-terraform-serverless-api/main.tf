@@ -48,9 +48,9 @@ resource "aws_iam_role" "function" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
@@ -62,13 +62,13 @@ resource "aws_iam_role_policy" "function" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Action = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem"]
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:DeleteItem"]
         Resource = aws_dynamodb_table.tasks.arn
       },
       {
-        Effect = "Allow"
-        Action = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "${aws_cloudwatch_log_group.function.arn}:*"
       }
     ]
