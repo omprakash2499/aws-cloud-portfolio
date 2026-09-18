@@ -44,3 +44,15 @@ run separately after deployment. Deployment and cleanup remain manual.
 After pushing, open **Actions → Portfolio CI** and inspect both jobs. A successful
 run there is the evidence for this project; adding the workflow alone does not
 prove that it passed.
+
+## Verified run
+
+[View the successful GitHub Actions run](https://github.com/omprakash2499/aws-cloud-portfolio/actions/runs/35367591518).
+
+Both jobs passed:
+- Lambda unit tests
+- Terraform formatting and configuration validation
+
+The first run exposed a provider checksum mismatch on Linux.
+Adding Windows and Linux checksums to the committed Terraform lock file
+resolved the failure.
