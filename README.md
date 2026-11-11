@@ -6,6 +6,25 @@ with infrastructure as code, Python, Docker, CI and monitoring.
 Each project includes deployment instructions, test results, troubleshooting
 and cleanup steps.
 
+**Certification:** [AWS Certified Solutions Architect – Associate](https://www.credly.com/badges/875d6c5c-4706-4a3e-9152-682a595dbf15/public_url)
+
+## Featured end-to-end deployment
+
+The Incident API connects three repositories covering application packaging,
+AWS infrastructure and automated release delivery. Start with Docker to run the
+application locally, then follow Terraform and Jenkins for the AWS deployment.
+
+| Repository | Engineering focus | Documented verification |
+| --- | --- | --- |
+| [Docker application](https://github.com/omprakash2499/docker-deployment) | Python incident API, non-root container, persistent storage and health checks | Local smoke checks, persistence and stop/start recovery |
+| [Terraform AWS infrastructure](https://github.com/omprakash2499/terraform-aws-deployment) | VPC, EC2, ECR, IAM and SSM administration with no security-group ingress | 12 resources provisioned, SSM connectivity and Docker readiness; resources destroyed after testing |
+| [Jenkins release pipeline](https://github.com/omprakash2499/jenkins-cicd-deployment) | Application tests, container checks, ECR publishing and deployment by image digest through SSM | Build #4 passed nine application tests and deployed to EC2; health, create and list checks passed |
+
+See the repositories for validation records, screenshots, design tradeoffs and
+remaining work. The AWS demo was removed after verification. Rollback execution
+and a vulnerability-threshold gate remain future work.
+
+
 ## Projects
 
 | Project | What I built | Verified results |
